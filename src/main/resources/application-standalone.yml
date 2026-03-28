@@ -1,0 +1,10 @@
+rabbitmq.host: ${RABBITMQ_HOST:`localhost`}
+datasources:
+  default:
+    url: ${JDBC_URL:`jdbc:postgresql://localhost/postgres?currentSchema=subscriptions`}
+    username: ${JDBC_USER:`postgres`}
+    password: ${JDBC_PASSWORD:`postgres`}
+    driverClassName: 'org.postgresql.Driver'
+logger:
+  levels:
+    io.github.opendonationassistant: INFO
