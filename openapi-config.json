@@ -1,5 +1,5 @@
 {
-  "npmName": "@opendonationassistant/oda-history-service-client",
+  "npmName": "@opendonationassistant/oda-subscriptions-client",
   "npmRepository" : "https://npm.pkg.github.com",
   "snapshot" : false,
   "supportsES6": true
