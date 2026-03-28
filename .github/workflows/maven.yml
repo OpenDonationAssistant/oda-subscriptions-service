@@ -1,0 +1,16 @@
+name: Release
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions: write-all
+
+jobs:
+  build-and-deploy:
+    uses: "OpenDonationAssistant/oda-libraries/.github/workflows/release_service.yml@master"
+    secrets: inherit
+    with:
+      service: subscriptions-service
+      version: "${{ github.RUN_NUMBER }}"

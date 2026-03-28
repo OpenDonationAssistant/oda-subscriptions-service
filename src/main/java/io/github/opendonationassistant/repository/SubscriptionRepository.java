@@ -2,6 +2,7 @@ package io.github.opendonationassistant.repository;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Singleton
@@ -12,6 +13,12 @@ public class SubscriptionRepository {
   @Inject
   public SubscriptionRepository(SubscriptionDataRepository repository) {
     this.repository = repository;
+  }
+
+  public CompletableFuture<List<Subscription>> all() {
+    return CompletableFuture.supplyAsync(() ->
+      repository.findAll().stream().map(this::convert).toList()
+    );
   }
 
   public CompletableFuture<Subscription> create(SubscriptionData data) {
