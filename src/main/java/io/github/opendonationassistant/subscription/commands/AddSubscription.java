@@ -11,6 +11,10 @@ import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +30,19 @@ public class AddSubscription extends BaseController {
     this.subscriptionRepository = subscriptionRepository;
   }
 
-  @Post("/subscriptions/commands/add")
+  @Operation(
+    summary = "Subscribe to events",
+    description = "Creates a new subscription"
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Subscription successfully created",
+    content = @Content(
+      mediaType = "application/json",
+      schema = @Schema(implementation = Void.class)
+    )
+  )
+  @Post("/subscriptions/commands/add-queue-subscription")
   @Secured(SecurityRule.IS_AUTHENTICATED)
   public CompletableFuture<HttpResponse<Void>> addSubscription(
     Authentication auth,
