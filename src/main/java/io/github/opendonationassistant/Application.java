@@ -19,7 +19,7 @@ import java.util.Map;
 public class Application {
 
   public static void main(String[] args) {
-    Micronaut.build(args).banner(false).start();
+    Micronaut.build(args).banner(false).classes(Application.class).start();
   }
 
   @ContextConfigurer
@@ -38,7 +38,10 @@ public class Application {
       List.of(
         Exchange("history", Map.of("event.HistoryItemEvent", eventsQueue)),
         Exchange("payments", Map.of("event.PaymentEvent", eventsQueue)),
-        Exchange("subscriptions", Map.of("natix", new Queue("subscriptions.natix")))
+        Exchange(
+          "subscriptions",
+          Map.of("natix", new Queue("subscriptions.natix"))
+        )
       )
     );
   }
