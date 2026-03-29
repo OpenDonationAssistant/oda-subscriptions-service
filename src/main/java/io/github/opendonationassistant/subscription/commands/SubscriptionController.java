@@ -1,15 +1,15 @@
 package io.github.opendonationassistant.subscription.commands;
 
 import io.github.opendonationassistant.commons.micronaut.BaseController;
+import io.github.opendonationassistant.repository.SubscriptionData;
 import io.github.opendonationassistant.repository.SubscriptionRepository;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
-import io.micronaut.serde.annotation.Serdeable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,59 +19,53 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Controller
-public class DeleteSubscription extends BaseController {
+public class SubscriptionController extends BaseController {
 
   private final SubscriptionRepository subscriptionRepository;
 
   @Inject
-  public DeleteSubscription(SubscriptionRepository subscriptionRepository) {
+  public SubscriptionController(SubscriptionRepository subscriptionRepository) {
     this.subscriptionRepository = subscriptionRepository;
   }
 
   @Operation(
-    summary = "Delete subscription by ID",
-    description = "Deletes a subscription by its ID"
+    summary = "Get subscription by ID",
+    description = "Retrieves a subscription by its ID"
   )
   @ApiResponse(
     responseCode = "200",
-    description = "Subscription successfully deleted",
+    description = "Subscription found",
     content = @Content(
       mediaType = "application/json",
-      schema = @Schema(implementation = Void.class)
+      schema = @Schema(implementation = SubscriptionData.class)
     )
   )
   @ApiResponse(
     responseCode = "404",
-    description = "Subscription not found or not owned by user",
+    description = "Subscription not found",
     content = @Content
   )
-  @Post("/subscriptions/commands/delete")
+  @Get("/subscriptions/{id}")
   @Secured(SecurityRule.IS_AUTHENTICATED)
-  public CompletableFuture<HttpResponse<Void>> deleteSubscription(
+  public CompletableFuture<HttpResponse<SubscriptionData>> getSubscription(
     Authentication auth,
-    @Body DeleteSubscriptionCommand command
+    @PathVariable String id
   ) {
     Optional<String> ownerId = getOwnerId(auth);
     if (ownerId.isEmpty()) {
       return CompletableFuture.completedFuture(HttpResponse.unauthorized());
     }
-    // First check if exists and belongs to user, then delete if it does
     return subscriptionRepository
-      .findById(command.subscriptionId())
-      .thenCompose(optionalSubscription -> {
-        if (
-          optionalSubscription.isPresent() &&
-          optionalSubscription.get().data().recipientId().equals(ownerId.get())
-        ) {
-          return subscriptionRepository
-            .deleteById(command.subscriptionId())
-            .thenApply(ignore -> HttpResponse.ok());
-        } else {
-          return CompletableFuture.completedFuture(HttpResponse.notFound());
-        }
-      });
+      .findById(id)
+      .thenApply(optionalSubscription ->
+        optionalSubscription
+          .filter(subscription ->
+            subscription.data().recipientId().equals(ownerId.get())
+          )
+          .map(subscription -> HttpResponse.ok(subscription.data()))
+          .orElseGet(() -> HttpResponse.notFound())
+      );
   }
-
-  @Serdeable
-  public record DeleteSubscriptionCommand(String subscriptionId) {}
+  
 }
+
