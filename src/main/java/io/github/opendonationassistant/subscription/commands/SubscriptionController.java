@@ -1,6 +1,8 @@
 package io.github.opendonationassistant.subscription.commands;
 
+import com.nimbusds.jose.shaded.gson.reflect.TypeToken;
 import io.github.opendonationassistant.commons.micronaut.BaseController;
+import io.github.opendonationassistant.repository.Subscription;
 import io.github.opendonationassistant.repository.SubscriptionData;
 import io.github.opendonationassistant.repository.SubscriptionRepository;
 import io.micronaut.http.HttpResponse;
@@ -15,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -66,6 +69,45 @@ public class SubscriptionController extends BaseController {
           .orElseGet(() -> HttpResponse.notFound())
       );
   }
-  
+
+  @Operation(
+    summary = "Get all subscriptions for the authenticated recipient",
+    description = "Retrieves all subscriptions for the currently authenticated recipient"
+  )
+  @ApiResponse(
+    responseCode = "200",
+    description = "Subscriptions found",
+    content = @Content(
+      mediaType = "application/json",
+      schema = @Schema(implementation = SubscriptionData.class)
+    )
+  )
+  @ApiResponse(
+    responseCode = "401",
+    description = "Unauthorized",
+    content = @Content
+  )
+  @Get("/subscriptions")
+  @Secured(SecurityRule.IS_AUTHENTICATED)
+  public CompletableFuture<
+    HttpResponse<List<SubscriptionData>>
+  > getSubscriptionsByRecipient(Authentication auth) {
+    Optional<String> ownerId = getOwnerId(auth);
+    if (ownerId.isEmpty()) {
+      return CompletableFuture.completedFuture(HttpResponse.unauthorized());
+    }
+    return subscriptionRepository
+      .all()
+      .thenApply(subscriptions ->
+        subscriptions
+          .stream()
+          .filter(subscription ->
+            subscription.data().recipientId().equals(ownerId.get())
+          )
+          .map(Subscription::data)
+          .toList()
+      )
+      .thenApply(HttpResponse::ok);
+  }
 }
 
