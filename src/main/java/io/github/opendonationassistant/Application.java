@@ -37,7 +37,8 @@ public class Application {
     return new AMQPConfiguration(
       List.of(
         Exchange("history", Map.of("event.HistoryItemEvent", eventsQueue)),
-        Exchange("payments", Map.of("event.PaymentEvent", eventsQueue))
+        Exchange("payments", Map.of("event.PaymentEvent", eventsQueue)),
+        Exchange("subscriptions", Map.of("natix", new Queue("subscriptions.natix")))
       )
     );
   }
