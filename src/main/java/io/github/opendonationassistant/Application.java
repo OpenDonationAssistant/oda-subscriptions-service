@@ -2,6 +2,7 @@ package io.github.opendonationassistant;
 
 import static io.github.opendonationassistant.rabbit.Exchange.Exchange;
 
+import io.github.opendonationassistant.commons.logging.ODALogger;
 import io.github.opendonationassistant.rabbit.AMQPConfiguration;
 import io.github.opendonationassistant.rabbit.Queue;
 import io.micronaut.context.ApplicationContextBuilder;
@@ -18,6 +19,8 @@ import java.util.Map;
 @OpenAPIDefinition(info = @Info(title = "oda-subscriptions-service"))
 public class Application {
 
+  private ODALogger log = new ODALogger(this);
+
   public static void main(String[] args) {
     Micronaut.build(args).banner(false).classes(Application.class).start();
   }
@@ -27,13 +30,14 @@ public class Application {
 
     @Override
     public void configure(ApplicationContextBuilder builder) {
-      builder.defaultEnvironments("allinone");
+      builder.defaultEnvironments("standalone");
     }
   }
 
   @Singleton
   public ChannelInitializer rabbitConfiguration() {
     var eventsQueue = new Queue("subscriptions.events");
+    log.debug("Initializing RabbitMQ", Map.of());
     return new AMQPConfiguration(
       List.of(
         Exchange("history", Map.of("event.HistoryItemEvent", eventsQueue)),
