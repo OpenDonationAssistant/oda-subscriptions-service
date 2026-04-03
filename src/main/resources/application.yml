@@ -20,7 +20,7 @@ micronaut:
         signatures:
           jwks:
             keycloak:
-              url: https://auth.oda.digital/realms/ODA/protocol/openid-connect/certs
+              url: ${JWKS_URI}
   caches:
     jwks:
       expire-after-write: 240h
