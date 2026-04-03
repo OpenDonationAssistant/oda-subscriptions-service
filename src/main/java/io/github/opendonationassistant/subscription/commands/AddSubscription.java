@@ -54,7 +54,7 @@ public class AddSubscription extends BaseController {
     }
     var subscriberId = Optional.ofNullable(auth)
       .map(Authentication::getAttributes)
-      .map(it -> it.get("client_id"))
+      .map(it -> it.get("azp"))
       .map(String::valueOf);
     if (subscriberId.isEmpty()) {
       return CompletableFuture.completedFuture(HttpResponse.unauthorized());
