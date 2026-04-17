@@ -32,6 +32,8 @@ flyway:
   datasources:
     default:
       enabled: true
+      schemas: 'subscriptions'
+      default-schema: 'subscriptions'
 endpoints:
   all:
     enabled: true
