@@ -42,3 +42,6 @@ endpoints:
     enabled: true
   loggers:
     write-sensitive: false
+datasources:
+  default:
+    schema: 'subscriptions'
