@@ -5,7 +5,7 @@ datasources:
     username: ${JDBC_USER:`postgres`}
     password: ${JDBC_PASSWORD:`postgres`}
     driverClassName: 'org.postgresql.Driver'
-    maximumPoolSize: 1
+    maximumPoolSize: 2
     schema: subscriptions
 logger:
   levels:
