@@ -42,6 +42,10 @@ endpoints:
     enabled: true
   loggers:
     write-sensitive: false
+  prometheus:
+    sensitive: false
+  metrics:
+    sensitive: false
 datasources:
   default:
     schema: 'subscriptions'
