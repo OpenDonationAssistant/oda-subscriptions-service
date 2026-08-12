@@ -4,13 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.opendonationassistant</groupId>
   <artifactId>oda-subscriptions-service</artifactId>
-  <version>0.0.3</version>
+  <version>0.1.0</version>
   <packaging>${packaging}</packaging>
 
   <parent>
     <groupId>io.micronaut.platform</groupId>
     <artifactId>micronaut-parent</artifactId>
-    <version>5.0.2</version>
+    <version>5.1.0</version>
   </parent>
 
   <properties>
@@ -21,7 +21,7 @@
     <micronaut.aot.enabled>false</micronaut.aot.enabled>
     <micronaut.aot.packageName>io.github.opendonationassistant.aot.generated</micronaut.aot.packageName>
     <exec.mainClass>io.github.opendonationassistant.Application</exec.mainClass>
-    <oda.version>0.10.200</oda.version>
+    <oda.version>0.11.232</oda.version>
   </properties>
 
   <repositories>
@@ -304,29 +304,6 @@
             <arg>-Xplugin:ErrorProne -XepOpt:NullAway:AnnotatedPackages=io.github.opendonationassistant -XepOpt:NullAway:JSpecifyMode=true -Xep:NullAway:ERROR -XepExcludedPaths:.*/target/generated-sources/.*</arg>
           </compilerArgs>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.openapitools</groupId>
-        <artifactId>openapi-generator-maven-plugin</artifactId>
-        <version>7.2.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <inputSpec>${project.basedir}/target/classes/META-INF/swagger/oda-subscriptions-service-1.0.0.yml</inputSpec>
-              <generatorName>typescript-axios</generatorName>
-              <configurationFile>openapi-config.json</configurationFile>
-              <configOptions>
-                <output>${project.build.directory}/</output>
-                <npmVersion>${project.version}</npmVersion>
-              </configOptions>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>
