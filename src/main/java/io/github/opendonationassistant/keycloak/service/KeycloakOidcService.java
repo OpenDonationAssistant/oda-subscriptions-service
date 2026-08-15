@@ -122,6 +122,28 @@ public class KeycloakOidcService {
       .exceptionally(this::rethrowVoid);
   }
 
+  /**
+   * Regenerates the client secret of an existing OpenID Connect application
+   * identified by its internal UUID and returns the new secret.
+   */
+  public CompletableFuture<KeycloakAdminClient.ClientSecretResponse> refreshClientSecret(
+    String clientInternalId
+  ) {
+    return getAdminAccessToken()
+      .thenCompose(token -> {
+        log.debug(
+          "Refreshing client secret",
+          Map.of("clientInternalId", clientInternalId, "realm", realm)
+        );
+        return keycloak.regenerateClientSecret(
+          "Bearer " + token,
+          realm,
+          clientInternalId
+        );
+      })
+      .exceptionally(this::rethrowVoid);
+  }
+
   private <T> T rethrowVoid(Throwable error) {
     log.error(
       "Failed to deregister OpenID Connect application",
