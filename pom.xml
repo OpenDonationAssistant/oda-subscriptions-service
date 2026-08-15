@@ -60,6 +60,12 @@
 
     <dependency>
       <groupId>io.micronaut</groupId>
+      <artifactId>micronaut-http-client</artifactId>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micronaut</groupId>
       <artifactId>micronaut-jackson-databind</artifactId>
       <scope>compile</scope>
     </dependency>

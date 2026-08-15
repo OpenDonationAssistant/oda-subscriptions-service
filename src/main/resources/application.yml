@@ -34,6 +34,13 @@ flyway:
       enabled: true
       schemas: 'subscriptions'
       default-schema: 'subscriptions'
+keycloak:
+  url: ${KEYCLOAK_URL:`http://keycloak:8080`}
+  realm: ${KEYCLOAK_REALM:`ODA`}
+  admin:
+    realm: ${KEYCLOAK_ADMIN_REALM:`master`}
+    client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:`admin-cli`}
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:``}
 endpoints:
   all:
     enabled: true
