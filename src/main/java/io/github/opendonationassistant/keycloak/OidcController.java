@@ -1,13 +1,11 @@
-package io.github.opendonationassistant.keycloak.command;
+package io.github.opendonationassistant.keycloak;
 
 import io.github.opendonationassistant.commons.micronaut.BaseController;
-import io.github.opendonationassistant.keycloak.dto.OidcClientRegistrationResult;
-import io.github.opendonationassistant.keycloak.dto.RegisterOidcClientCommand;
+import io.github.opendonationassistant.keycloak.dto.OidcApplication;
 import io.github.opendonationassistant.keycloak.service.KeycloakOidcService;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Get;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
@@ -16,32 +14,34 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Command controller for registering an OpenID Connect application in Keycloak.
+ * Query controller for OpenID Connect applications owned by the authenticated
+ * user.
  */
-@Controller("/keycloak")
-public class KeycloakOidcController extends BaseController {
+@Controller
+public class OidcController extends BaseController {
 
   private final KeycloakOidcService keycloakOidcService;
 
   @Inject
-  public KeycloakOidcController(KeycloakOidcService keycloakOidcService) {
+  public OidcController(KeycloakOidcService keycloakOidcService) {
     this.keycloakOidcService = keycloakOidcService;
   }
 
   @Operation(
-    summary = "Register OpenID Connect application",
-    description = "Creates a new OpenID Connect client application in Keycloak and, generates its client secret"
+    summary = "List OpenID Connect applications",
+    description = "Returns all OpenID Connect applications for the authenticated user"
   )
   @ApiResponse(
     responseCode = "200",
-    description = "OpenID Connect application registered",
+    description = "OpenID Connect applications found",
     content = @Content(
       mediaType = "application/json",
-      schema = @Schema(implementation = OidcClientRegistrationResult.class)
+      schema = @Schema(implementation = OidcApplication.class)
     )
   )
   @ApiResponse(
@@ -49,21 +49,17 @@ public class KeycloakOidcController extends BaseController {
     description = "Unauthorized",
     content = @Content
   )
-  @Post("/commands/register-oidc-client")
+  @Get("/apps")
   @Secured(SecurityRule.IS_AUTHENTICATED)
-  public CompletableFuture<
-    HttpResponse<OidcClientRegistrationResult>
-  > registerOidcApplication(
-    Authentication auth,
-    @Body RegisterOidcClientCommand command
+  public CompletableFuture<HttpResponse<List<OidcApplication>>> getApps(
+    Authentication auth
   ) {
     Optional<String> ownerId = getOwnerId(auth);
     if (ownerId.isEmpty()) {
       return CompletableFuture.completedFuture(HttpResponse.unauthorized());
     }
     return keycloakOidcService
-      .register(command, ownerId.get())
+      .listApplications(ownerId.get())
       .thenApply(HttpResponse::ok);
   }
 }
-

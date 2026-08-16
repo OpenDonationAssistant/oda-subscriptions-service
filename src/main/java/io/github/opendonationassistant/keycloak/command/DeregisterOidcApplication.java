@@ -55,7 +55,7 @@ public class DeregisterOidcApplication extends BaseController {
     description = "Unauthorized",
     content = @Content
   )
-  @Post("/keycloak/commands/deregister-oidc-client")
+  @Post("/apps/commands/deregister-oidc-client")
   @Secured(SecurityRule.IS_AUTHENTICATED)
   public CompletableFuture<HttpResponse<Void>> deregisterOidcApplication(
     Authentication auth,

@@ -62,7 +62,7 @@ public class RefreshClientSecret extends BaseController {
     description = "OpenID Connect application not mapped to user",
     content = @Content
   )
-  @Post("/keycloak/commands/refresh-client-secret")
+  @Post("/apps/commands/refresh-client-secret")
   @Secured(SecurityRule.IS_AUTHENTICATED)
   public CompletableFuture<HttpResponse<RefreshedClientSecret>> refreshClientSecret(
     Authentication auth,

@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 
 import io.github.opendonationassistant.commons.logging.ODALogger;
 import io.github.opendonationassistant.keycloak.dto.ClientRepresentation;
+import io.github.opendonationassistant.keycloak.dto.OidcApplication;
 import io.github.opendonationassistant.keycloak.dto.OidcClientRegistrationResult;
 import io.github.opendonationassistant.keycloak.dto.RegisterOidcClientCommand;
 import io.github.opendonationassistant.keycloak.http.KeycloakAdminClient;
@@ -126,9 +127,9 @@ public class KeycloakOidcService {
    * Regenerates the client secret of an existing OpenID Connect application
    * identified by its internal UUID and returns the new secret.
    */
-  public CompletableFuture<KeycloakAdminClient.ClientSecretResponse> refreshClientSecret(
-    String clientInternalId
-  ) {
+  public CompletableFuture<
+    KeycloakAdminClient.ClientSecretResponse
+  > refreshClientSecret(String clientInternalId) {
     return getAdminAccessToken()
       .thenCompose(token -> {
         log.debug(
@@ -142,6 +143,59 @@ public class KeycloakOidcService {
         );
       })
       .exceptionally(this::rethrowVoid);
+  }
+
+  /**
+   * Lists the OpenID Connect applications owned by the given user. The
+   * ownership mappings are stored locally, while the application details are
+   * fetched from Keycloak. Deregistered applications are excluded.
+   */
+  public CompletableFuture<List<OidcApplication>> listApplications(
+    String ownerId
+  ) {
+    return getAdminAccessToken()
+      .thenCompose(token ->
+        oidcMappings
+          .findByOwnerId(ownerId)
+          .thenCompose(mappings -> fetchApplications(token, mappings))
+      )
+      .exceptionally(error ->
+        rethrow(error, "Failed to list OpenID Connect applications")
+      );
+  }
+
+  private CompletableFuture<List<OidcApplication>> fetchApplications(
+    String token,
+    List<OidcMapping> mappings
+  ) {
+    List<CompletableFuture<OidcApplication>> futures = mappings
+      .stream()
+      .map(mapping -> fetchApplication(token, mapping))
+      .toList();
+    return CompletableFuture.allOf(
+      futures.toArray(CompletableFuture[]::new)
+    ).thenApply(ignored ->
+      futures.stream().map(CompletableFuture::join).toList()
+    );
+  }
+
+  private CompletableFuture<OidcApplication> fetchApplication(
+    String token,
+    OidcMapping mapping
+  ) {
+    return keycloak
+      .getClient("Bearer " + token, realm, mapping.id())
+      .thenApply(client ->
+        new OidcApplication(
+          requireNonNull(client.clientId(), "Keycloak returned no client id"),
+          requireNonNull(
+            client.id(),
+            "Keycloak returned no client internal id"
+          ),
+          client.name(),
+          client.description()
+        )
+      );
   }
 
   private <T> T rethrowVoid(Throwable error) {
@@ -230,10 +284,11 @@ public class KeycloakOidcService {
   }
 
   private <T> T rethrow(Throwable error) {
-    log.error(
-      "Failed to register OpenID Connect application",
-      errorToException(error)
-    );
+    return rethrow(error, "Failed to register OpenID Connect application");
+  }
+
+  private <T> T rethrow(Throwable error, String message) {
+    log.error(message, errorToException(error));
     if (error instanceof CompletionException completionError) {
       throw completionError;
     }
@@ -244,4 +299,3 @@ public class KeycloakOidcService {
     return error instanceof Exception e ? e : new IllegalStateException(error);
   }
 }
-

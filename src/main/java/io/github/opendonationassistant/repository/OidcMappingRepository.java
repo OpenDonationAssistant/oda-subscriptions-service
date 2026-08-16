@@ -2,6 +2,7 @@ package io.github.opendonationassistant.repository;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -21,6 +22,12 @@ public class OidcMappingRepository {
 
   public CompletableFuture<Optional<OidcMapping>> findById(String id) {
     return CompletableFuture.supplyAsync(() -> repository.findById(id));
+  }
+
+  public CompletableFuture<List<OidcMapping>> findByOwnerId(String ownerId) {
+    return CompletableFuture.supplyAsync(() ->
+      repository.findByOwnerIdAndDeregisteredFalse(ownerId)
+    );
   }
 
   public CompletableFuture<Void> markDeregistered(String id) {

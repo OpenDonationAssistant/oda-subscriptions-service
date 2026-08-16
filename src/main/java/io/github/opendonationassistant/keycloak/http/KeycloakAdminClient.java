@@ -73,6 +73,16 @@ public interface KeycloakAdminClient {
     @PathVariable("clientId") String clientId
   );
 
+  /**
+   * Returns a single client by its internal UUID.
+   */
+  @Get(value = "/admin/realms/{realm}/clients/{clientUuid}")
+  CompletableFuture<ClientRepresentation> getClient(
+    @Header("Authorization") String bearer,
+    @PathVariable("realm") String realm,
+    @PathVariable("clientUuid") String clientUuid
+  );
+
   /** Deletes an existing client by its internal UUID. */
   @Delete("/admin/realms/{realm}/clients/{clientId}")
   CompletableFuture<Void> deleteClient(
