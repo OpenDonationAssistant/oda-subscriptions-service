@@ -9,6 +9,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
+import io.micronaut.serde.annotation.Serdeable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,7 +42,7 @@ public class OidcController extends BaseController {
     description = "OpenID Connect applications found",
     content = @Content(
       mediaType = "application/json",
-      schema = @Schema(implementation = OidcApplication.class)
+      schema = @Schema(implementation = GetAppsResponse.class)
     )
   )
   @ApiResponse(
@@ -62,4 +63,7 @@ public class OidcController extends BaseController {
       .listApplications(ownerId.get())
       .thenApply(HttpResponse::ok);
   }
+
+  @Serdeable
+  public static interface GetAppsResponse extends List<OidcApplication> {}
 }
