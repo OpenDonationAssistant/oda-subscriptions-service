@@ -35,7 +35,6 @@ flyway:
       schemas: 'subscriptions'
       default-schema: 'subscriptions'
 keycloak:
-  url: ${KEYCLOAK_URL:`http://keycloak:8080`}
   realm: ${KEYCLOAK_REALM:`ODA`}
   admin:
     realm: ${KEYCLOAK_ADMIN_REALM:`master`}

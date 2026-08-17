@@ -23,9 +23,8 @@ import java.util.concurrent.CompletableFuture;
  *   obtained from the token endpoint first.
  * </p>
  */
-@Client("${keycloak.url}")
+@Client("keycloak")
 public interface KeycloakAdminClient {
-
   /**
    * Fetches an OAuth2 access token (client_credentials grant) used to
    * authenticate subsequent admin requests.
@@ -102,3 +101,4 @@ public interface KeycloakAdminClient {
     @JsonProperty("value") String value
   ) {}
 }
+
