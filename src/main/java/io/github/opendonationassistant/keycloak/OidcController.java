@@ -3,6 +3,8 @@ package io.github.opendonationassistant.keycloak;
 import io.github.opendonationassistant.commons.micronaut.BaseController;
 import io.github.opendonationassistant.keycloak.dto.OidcApplication;
 import io.github.opendonationassistant.keycloak.service.KeycloakOidcService;
+import io.micronaut.data.model.Page;
+import io.micronaut.data.model.Pageable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
@@ -45,14 +47,10 @@ public class OidcController extends BaseController {
       schema = @Schema(implementation = GetAppsResponse.class)
     )
   )
-  @ApiResponse(
-    responseCode = "401",
-    description = "Unauthorized",
-    content = @Content
-  )
+  @ApiResponse(responseCode = "401", description = "Unauthorized")
   @Get("/apps")
   @Secured(SecurityRule.IS_AUTHENTICATED)
-  public CompletableFuture<HttpResponse<List<OidcApplication>>> getApps(
+  public CompletableFuture<HttpResponse<Page<OidcApplication>>> getApps(
     Authentication auth
   ) {
     Optional<String> ownerId = getOwnerId(auth);
@@ -61,9 +59,11 @@ public class OidcController extends BaseController {
     }
     return keycloakOidcService
       .listApplications(ownerId.get())
-      .thenApply(HttpResponse::ok);
+      .thenApply(it ->
+        HttpResponse.ok(Page.of(it, Pageable.from(0), (long) it.size()))
+      );
   }
 
   @Serdeable
-  public static interface GetAppsResponse extends List<OidcApplication> {}
+  public static interface GetAppsResponse extends Page<OidcApplication> {}
 }
