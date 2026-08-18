@@ -146,6 +146,60 @@ public class KeycloakOidcService {
   }
 
   /**
+   * Updates the settings of an existing OpenID Connect application: name,
+   * description and redirect URIs. Fields that are null are left unchanged.
+   */
+  public CompletableFuture<Void> changeSettings(
+    String clientInternalId,
+    @Nullable String name,
+    @Nullable String description,
+    @Nullable List<String> redirectUris
+  ) {
+    return getAdminAccessToken()
+      .thenCompose(token ->
+        keycloak
+          .getClient("Bearer " + token, realm, clientInternalId)
+          .thenApply(client ->
+            applySettingsChanges(client, name, description, redirectUris)
+          )
+          .thenCompose(updated ->
+            keycloak.updateClient(
+              "Bearer " + token,
+              realm,
+              clientInternalId,
+              updated
+            )
+          )
+      )
+      .exceptionally(error ->
+        rethrow(error, "Failed to update OpenID Connect application settings")
+      );
+  }
+
+  private ClientRepresentation applySettingsChanges(
+    ClientRepresentation current,
+    @Nullable String name,
+    @Nullable String description,
+    @Nullable List<String> redirectUris
+  ) {
+    return new ClientRepresentation(
+      current.id(),
+      current.clientId(),
+      name != null ? name : current.name(),
+      description != null ? description : current.description(),
+      current.protocol(),
+      current.publicClient(),
+      current.standardFlowEnabled(),
+      current.implicitFlowEnabled(),
+      current.directAccessGrantsEnabled(),
+      current.serviceAccountsEnabled(),
+      redirectUris != null ? List.copyOf(redirectUris) : current.redirectUris(),
+      current.webOrigins(),
+      current.secret()
+    );
+  }
+
+  /**
    * Lists the OpenID Connect applications owned by the given user. The
    * ownership mappings are stored locally, while the application details are
    * fetched from Keycloak. Deregistered applications are excluded.

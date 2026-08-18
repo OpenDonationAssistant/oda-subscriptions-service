@@ -9,6 +9,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Header;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.Map;
@@ -80,6 +81,21 @@ public interface KeycloakAdminClient {
     @Header("Authorization") String bearer,
     @PathVariable("realm") String realm,
     @PathVariable("clientUuid") String clientUuid
+  );
+
+  /**
+   * Updates an existing client by its internal UUID. The full client
+   * representation is replaced with the provided one.
+   */
+  @Put(
+    value = "/admin/realms/{realm}/clients/{clientUuid}",
+    consumes = MediaType.APPLICATION_JSON
+  )
+  CompletableFuture<Void> updateClient(
+    @Header("Authorization") String bearer,
+    @PathVariable("realm") String realm,
+    @PathVariable("clientUuid") String clientUuid,
+    @Body ClientRepresentation client
   );
 
   /** Deletes an existing client by its internal UUID. */
