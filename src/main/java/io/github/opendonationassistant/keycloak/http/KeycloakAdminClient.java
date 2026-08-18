@@ -32,8 +32,8 @@ public interface KeycloakAdminClient {
    */
   @Post(
     value = "/realms/{realm}/protocol/openid-connect/token",
-    consumes = MediaType.APPLICATION_FORM_URLENCODED,
-    produces = MediaType.APPLICATION_JSON
+    produces = MediaType.APPLICATION_FORM_URLENCODED,
+    consumes = MediaType.APPLICATION_JSON
   )
   CompletableFuture<AccessTokenResponse> getAccessToken(
     @PathVariable("realm") String realm,
@@ -43,7 +43,7 @@ public interface KeycloakAdminClient {
   /** Creates a new client in the given realm. */
   @Post(
     value = "/admin/realms/{realm}/clients",
-    consumes = MediaType.APPLICATION_JSON
+    produces = MediaType.APPLICATION_JSON
   )
   CompletableFuture<ClientRepresentation> createClient(
     @Header("Authorization") String bearer,
@@ -57,7 +57,7 @@ public interface KeycloakAdminClient {
    */
   @Post(
     value = "/admin/realms/{realm}/clients/{clientId}/client-secret",
-    consumes = MediaType.APPLICATION_JSON
+    produces = MediaType.APPLICATION_JSON
   )
   CompletableFuture<ClientSecretResponse> regenerateClientSecret(
     @Header("Authorization") String bearer,
@@ -89,7 +89,7 @@ public interface KeycloakAdminClient {
    */
   @Put(
     value = "/admin/realms/{realm}/clients/{clientUuid}",
-    consumes = MediaType.APPLICATION_JSON
+    produces = MediaType.APPLICATION_JSON
   )
   CompletableFuture<Void> updateClient(
     @Header("Authorization") String bearer,
@@ -117,4 +117,3 @@ public interface KeycloakAdminClient {
     @JsonProperty("value") String value
   ) {}
 }
-
