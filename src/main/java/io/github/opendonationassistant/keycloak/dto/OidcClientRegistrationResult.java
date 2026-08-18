@@ -14,7 +14,6 @@ import org.jspecify.annotations.Nullable;
 @Serdeable
 public record OidcClientRegistrationResult(
   String clientId,
-  String clientInternalId,
   String realm,
   @Nullable String clientSecret
 ) {}

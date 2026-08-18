@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.jspecify.annotations.Nullable;
+import org.zalando.problem.ProblemBuilder;
 
 @Singleton
 public class KeycloakOidcService {
@@ -67,36 +68,24 @@ public class KeycloakOidcService {
     RegisterOidcClientCommand command,
     String ownerId
   ) {
-    return createClient(token, command).thenCompose(client -> {
-      String clientInternalId = requireNonNull(
-        client.id(),
-        "Keycloak returned no client internal id"
+    final var clientId = command.clientId();
+    if (clientId == null || clientId.isBlank()) {
+      return CompletableFuture.failedFuture(
+        new RuntimeException("Missing clientId")
       );
-      boolean confidential = !client.publicClient();
-      CompletableFuture<@Nullable String> secret;
-      if (confidential) {
-        log.debug(
-          "Generating client secret",
-          Map.of("clientId", String.valueOf(client.clientId()))
-        );
-        secret = keycloak
-          .regenerateClientSecret("Bearer " + token, realm, clientInternalId)
-          .thenApply(KeycloakAdminClient.ClientSecretResponse::value);
-      } else {
-        secret = CompletableFuture.completedFuture(null);
-      }
+    }
+    return createClient(token, command).thenCompose(client -> {
+      log.debug("Generating client secret", Map.of("clientId", clientId));
+      CompletableFuture<@Nullable String> secret = keycloak
+        .regenerateClientSecret("Bearer " + token, realm, clientId)
+        .thenApply(KeycloakAdminClient.ClientSecretResponse::value);
       return secret
         .thenApply(value ->
-          new OidcClientRegistrationResult(
-            requireNonNull(client.clientId(), "Keycloak returned no client id"),
-            clientInternalId,
-            realm,
-            value
-          )
+          new OidcClientRegistrationResult(clientId, realm, value)
         )
         .thenCompose(result ->
           oidcMappings
-            .create(new OidcMapping(result.clientInternalId(), ownerId, false))
+            .create(new OidcMapping(result.clientId(), ownerId, false))
             .thenApply(ignored -> result)
         );
     });
@@ -306,7 +295,7 @@ public class KeycloakOidcService {
       );
   }
 
-  private CompletableFuture<ClientRepresentation> createClient(
+  private CompletableFuture<Void> createClient(
     String token,
     RegisterOidcClientCommand command
   ) {

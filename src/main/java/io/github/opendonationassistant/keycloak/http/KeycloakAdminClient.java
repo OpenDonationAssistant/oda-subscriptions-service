@@ -45,7 +45,7 @@ public interface KeycloakAdminClient {
     value = "/admin/realms/{realm}/clients",
     produces = MediaType.APPLICATION_JSON
   )
-  CompletableFuture<ClientRepresentation> createClient(
+  CompletableFuture<Void> createClient(
     @Header("Authorization") String bearer,
     @PathVariable("realm") String realm,
     @Body ClientRepresentation client
