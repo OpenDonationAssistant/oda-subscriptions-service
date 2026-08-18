@@ -300,12 +300,12 @@ public class KeycloakOidcService {
     RegisterOidcClientCommand command
   ) {
     var representation = new ClientRepresentation(
-      null,
+      command.clientId(),
       command.clientId(),
       command.clientName(),
       command.description(),
       "openid-connect",
-      false,
+      true,
       Boolean.TRUE.equals(command.standardFlowEnabled()),
       Boolean.TRUE.equals(command.implicitFlowEnabled()),
       Boolean.TRUE.equals(command.directAccessGrantsEnabled()),

@@ -2,6 +2,7 @@ package io.github.opendonationassistant.keycloak.http;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.opendonationassistant.keycloak.dto.ClientRepresentation;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Delete;
@@ -45,7 +46,7 @@ public interface KeycloakAdminClient {
     value = "/admin/realms/{realm}/clients",
     produces = MediaType.APPLICATION_JSON
   )
-  CompletableFuture<Void> createClient(
+  CompletableFuture<HttpResponse<Void>> createClient(
     @Header("Authorization") String bearer,
     @PathVariable("realm") String realm,
     @Body ClientRepresentation client
