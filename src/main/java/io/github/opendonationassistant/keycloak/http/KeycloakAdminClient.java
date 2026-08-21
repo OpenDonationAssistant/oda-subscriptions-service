@@ -2,6 +2,7 @@ package io.github.opendonationassistant.keycloak.http;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.opendonationassistant.keycloak.dto.ClientRepresentation;
+import io.micronaut.http.HttpHeaders;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Body;
@@ -13,6 +14,7 @@ import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.serde.annotation.Serdeable;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -51,6 +53,34 @@ public interface KeycloakAdminClient {
     @PathVariable("realm") String realm,
     @Body ClientRepresentation client
   );
+
+  /**
+   * Extracts the internal client UUID from the {@code Location} header of the
+   * response returned when a client is created. Keycloak answers {@code 201}
+   * with an empty body and points the header at the newly created client, e.g.
+   * {@code .../admin/realms/{realm}/clients/{clientUuid}}.
+   */
+  static String parseClientInternalId(HttpResponse<?> response) {
+    String location = response.getHeaders().get(HttpHeaders.LOCATION);
+    if (location == null || location.isBlank()) {
+      throw new IllegalStateException(
+        "Keycloak returned no Location header for the created client"
+      );
+    }
+    String path = URI.create(location).getPath();
+    if (path == null || path.isBlank()) {
+      throw new IllegalStateException(
+        "Keycloak created client Location header has no path: " + location
+      );
+    }
+    String clientInternalId = path.substring(path.lastIndexOf('/') + 1);
+    if (clientInternalId.isBlank()) {
+      throw new IllegalStateException(
+        "Keycloak created client Location header has no client id: " + location
+      );
+    }
+    return clientInternalId;
+  }
 
   /**
    * Regenerates (or on first call simply returns) the secret of an existing

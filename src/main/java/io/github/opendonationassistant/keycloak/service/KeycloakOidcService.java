@@ -11,6 +11,7 @@ import io.github.opendonationassistant.keycloak.http.KeycloakAdminClient;
 import io.github.opendonationassistant.repository.OidcMapping;
 import io.github.opendonationassistant.repository.OidcMappingRepository;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.http.HttpResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
@@ -74,10 +75,16 @@ public class KeycloakOidcService {
         new RuntimeException("Missing clientId")
       );
     }
-    return createClient(token, command).thenCompose(client -> {
-      log.debug("Generating client secret", Map.of("clientId", clientId));
+    return createClient(token, command).thenCompose(response -> {
+      String clientInternalId = KeycloakAdminClient.parseClientInternalId(
+        response
+      );
+      log.debug(
+        "Generating client secret",
+        Map.of("clientId", clientId, "clientInternalId", clientInternalId)
+      );
       CompletableFuture<@Nullable String> secret = keycloak
-        .regenerateClientSecret("Bearer " + token, realm, clientId)
+        .regenerateClientSecret("Bearer " + token, realm, clientInternalId)
         .thenApply(KeycloakAdminClient.ClientSecretResponse::value);
       return secret
         .thenApply(value ->
@@ -85,7 +92,7 @@ public class KeycloakOidcService {
         )
         .thenCompose(result ->
           oidcMappings
-            .create(new OidcMapping(result.clientId(), ownerId, false))
+            .create(new OidcMapping(clientInternalId, ownerId, false))
             .thenApply(ignored -> result)
         );
     });
@@ -295,7 +302,7 @@ public class KeycloakOidcService {
       );
   }
 
-  private CompletableFuture<Void> createClient(
+  private CompletableFuture<HttpResponse<Void>> createClient(
     String token,
     RegisterOidcClientCommand command
   ) {
