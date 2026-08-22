@@ -235,7 +235,8 @@ public class KeycloakOidcService {
           ),
           client.name(),
           client.description(),
-          secretSuffix(client.secret())
+          secretSuffix(client.secret()),
+          client.redirectUris()
         )
       );
   }
