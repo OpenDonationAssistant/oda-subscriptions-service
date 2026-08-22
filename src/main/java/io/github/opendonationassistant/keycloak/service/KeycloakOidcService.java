@@ -247,7 +247,9 @@ public class KeycloakOidcService {
     if (secret == null || secret.isBlank()) {
       return null;
     }
-    return secret.substring(Math.max(0, secret.length() - SECRET_SUFFIX_LENGTH));
+    return secret.substring(
+      Math.max(0, secret.length() - SECRET_SUFFIX_LENGTH)
+    );
   }
 
   private <T> T rethrowVoid(Throwable error) {
@@ -314,7 +316,7 @@ public class KeycloakOidcService {
       command.clientName(),
       command.description(),
       "openid-connect",
-      true,
+      false,
       Boolean.TRUE.equals(command.standardFlowEnabled()),
       Boolean.TRUE.equals(command.implicitFlowEnabled()),
       Boolean.TRUE.equals(command.directAccessGrantsEnabled()),
