@@ -42,9 +42,8 @@ public class ChangeOidcAppSettings extends BaseController {
 
   @Operation(
     summary = "Change OpenID Connect application settings",
-    description =
-      "Updates the name, description and redirect URIs of an existing " +
-      "OpenID Connect client application in Keycloak"
+    description = "Updates the name, description and redirect URIs of an existing " +
+    "OpenID Connect client application in Keycloak"
   )
   @ApiResponse(
     responseCode = "200",
@@ -72,7 +71,7 @@ public class ChangeOidcAppSettings extends BaseController {
     // Verify that the OpenID Connect application is mapped to the authenticated
     // user before changing its settings.
     return oidcMappingRepository
-      .findById(command.clientInternalId())
+      .findById(command.id())
       .thenCompose(optionalMapping -> {
         boolean ownedByUser =
           optionalMapping.isPresent() &&
@@ -81,7 +80,7 @@ public class ChangeOidcAppSettings extends BaseController {
         if (ownedByUser) {
           return keycloakOidcService
             .changeSettings(
-              command.clientInternalId(),
+              command.id(),
               command.name(),
               command.description(),
               command.redirectUris()
@@ -95,7 +94,7 @@ public class ChangeOidcAppSettings extends BaseController {
 
   @Serdeable
   public record ChangeOidcAppSettingsCommand(
-    String clientInternalId,
+    String id,
     @Nullable String name,
     @Nullable String description,
     @Nullable List<String> redirectUris
