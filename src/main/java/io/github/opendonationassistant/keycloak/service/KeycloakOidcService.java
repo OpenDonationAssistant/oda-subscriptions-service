@@ -83,18 +83,9 @@ public class KeycloakOidcService {
         "Generating client secret",
         Map.of("clientId", clientId, "clientInternalId", clientInternalId)
       );
-      CompletableFuture<@Nullable String> secret = keycloak
-        .regenerateClientSecret("Bearer " + token, realm, clientInternalId)
-        .thenApply(KeycloakAdminClient.ClientSecretResponse::value);
-      return secret
-        .thenApply(value ->
-          new OidcClientRegistrationResult(clientId, realm, value)
-        )
-        .thenCompose(result ->
-          oidcMappings
-            .create(new OidcMapping(clientInternalId, ownerId, false))
-            .thenApply(ignored -> result)
-        );
+      return oidcMappings
+        .create(new OidcMapping(clientInternalId, ownerId, false))
+        .thenApply(_ -> new OidcClientRegistrationResult(clientInternalId));
     });
   }
 
@@ -243,9 +234,20 @@ public class KeycloakOidcService {
             "Keycloak returned no client internal id"
           ),
           client.name(),
-          client.description()
+          client.description(),
+          secretSuffix(client.secret())
         )
       );
+  }
+
+  private static final int SECRET_SUFFIX_LENGTH = 6;
+
+  @Nullable
+  private static String secretSuffix(@Nullable String secret) {
+    if (secret == null || secret.isBlank()) {
+      return null;
+    }
+    return secret.substring(Math.max(0, secret.length() - SECRET_SUFFIX_LENGTH));
   }
 
   private <T> T rethrowVoid(Throwable error) {

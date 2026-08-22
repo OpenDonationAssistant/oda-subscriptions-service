@@ -40,9 +40,8 @@ public class RefreshClientSecret extends BaseController {
 
   @Operation(
     summary = "Refresh OpenID Connect client secret",
-    description =
-      "Regenerates the client secret of an existing OpenID Connect client " +
-      "application in Keycloak"
+    description = "Regenerates the client secret of an existing OpenID Connect client " +
+    "application in Keycloak"
   )
   @ApiResponse(
     responseCode = "200",
@@ -64,7 +63,9 @@ public class RefreshClientSecret extends BaseController {
   )
   @Post("/apps/commands/refresh-client-secret")
   @Secured(SecurityRule.IS_AUTHENTICATED)
-  public CompletableFuture<HttpResponse<RefreshedClientSecret>> refreshClientSecret(
+  public CompletableFuture<
+    HttpResponse<RefreshedClientSecret>
+  > refreshClientSecret(
     Authentication auth,
     @Body RefreshClientSecretCommand command
   ) {
@@ -75,7 +76,7 @@ public class RefreshClientSecret extends BaseController {
     // Verify that the OpenID Connect application is mapped to the authenticated
     // user before refreshing its secret.
     return oidcMappingRepository
-      .findById(command.clientInternalId())
+      .findById(command.id())
       .thenCompose(optionalMapping -> {
         boolean ownedByUser =
           optionalMapping.isPresent() &&
@@ -83,13 +84,10 @@ public class RefreshClientSecret extends BaseController {
           !optionalMapping.get().deregistered();
         if (ownedByUser) {
           return keycloakOidcService
-            .refreshClientSecret(command.clientInternalId())
+            .refreshClientSecret(command.id())
             .thenApply(response ->
               HttpResponse.ok(
-                new RefreshedClientSecret(
-                  command.clientInternalId(),
-                  response.value()
-                )
+                new RefreshedClientSecret(command.id(), response.value())
               )
             );
         } else {
@@ -99,11 +97,8 @@ public class RefreshClientSecret extends BaseController {
   }
 
   @Serdeable
-  public record RefreshClientSecretCommand(String clientInternalId) {}
+  public record RefreshClientSecretCommand(String id) {}
 
   @Serdeable
-  public record RefreshedClientSecret(
-    String clientInternalId,
-    String clientSecret
-  ) {}
+  public record RefreshedClientSecret(String id, String clientSecret) {}
 }
