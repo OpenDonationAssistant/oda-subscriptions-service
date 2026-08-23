@@ -86,10 +86,52 @@ public class KeycloakOidcService {
         "Generating client secret",
         Map.of("clientId", clientId, "clientInternalId", clientInternalId)
       );
-      return oidcMappings
-        .create(new OidcMapping(clientInternalId, ownerId, false))
+      return addStompDefaultScope(token, clientInternalId)
+        .thenCompose(_ ->
+          oidcMappings
+            .create(new OidcMapping(clientInternalId, ownerId, false))
+        )
         .thenApply(_ -> new OidcClientRegistrationResult(clientInternalId));
     });
+  }
+
+  private static final String STOMP_CLIENT_SCOPE = "stomp";
+
+  private CompletableFuture<Void> addStompDefaultScope(
+    String token,
+    String clientInternalId
+  ) {
+    return keycloak
+      .getClientScopes("Bearer " + token, realm)
+      .thenCompose(scopes -> {
+        var stompScope = scopes
+          .stream()
+          .filter(scope -> STOMP_CLIENT_SCOPE.equals(scope.name()))
+          .findFirst()
+          .orElseThrow(() ->
+            new IllegalStateException(
+              "Keycloak client scope '" +
+              STOMP_CLIENT_SCOPE +
+              "' not found in realm " +
+              realm
+            )
+          );
+        log.debug(
+          "Adding default client scope",
+          Map.of(
+            "clientInternalId",
+            clientInternalId,
+            "scope",
+            STOMP_CLIENT_SCOPE
+          )
+        );
+        return keycloak.addDefaultClientScope(
+          "Bearer " + token,
+          realm,
+          clientInternalId,
+          stompScope.id()
+        );
+      });
   }
 
   /**

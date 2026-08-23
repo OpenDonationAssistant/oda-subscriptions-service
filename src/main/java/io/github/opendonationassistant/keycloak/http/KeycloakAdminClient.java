@@ -15,6 +15,7 @@ import io.micronaut.http.annotation.Put;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.serde.annotation.Serdeable;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -137,6 +138,28 @@ public interface KeycloakAdminClient {
     @PathVariable("clientId") String clientId
   );
 
+  /** Lists all client scopes defined in the given realm. */
+  @Get("/admin/realms/{realm}/client-scopes")
+  CompletableFuture<List<ClientScopeRepresentation>> getClientScopes(
+    @Header("Authorization") String bearer,
+    @PathVariable("realm") String realm
+  );
+
+  /**
+   * Registers an existing client scope as a default client scope of a client,
+   * so that the scope is included in every token issued for that client.
+   */
+  @Put(
+    value = "/admin/realms/{realm}/clients/{clientUuid}/default-client-scopes/{scopeId}",
+    produces = MediaType.APPLICATION_JSON
+  )
+  CompletableFuture<Void> addDefaultClientScope(
+    @Header("Authorization") String bearer,
+    @PathVariable("realm") String realm,
+    @PathVariable("clientUuid") String clientUuid,
+    @PathVariable("scopeId") String scopeId
+  );
+
   @Serdeable
   record AccessTokenResponse(
     @JsonProperty("access_token") String accessToken
@@ -146,5 +169,11 @@ public interface KeycloakAdminClient {
   record ClientSecretResponse(
     @JsonProperty("type") String type,
     @JsonProperty("value") String value
+  ) {}
+
+  @Serdeable
+  record ClientScopeRepresentation(
+    @JsonProperty("id") String id,
+    @JsonProperty("name") String name
   ) {}
 }
