@@ -3,6 +3,7 @@ package io.github.opendonationassistant.keycloak.command;
 import io.github.opendonationassistant.commons.micronaut.BaseController;
 import io.github.opendonationassistant.keycloak.service.KeycloakOidcService;
 import io.github.opendonationassistant.repository.OidcMappingRepository;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
@@ -73,6 +74,10 @@ public class ChangeOidcAppSettings extends BaseController {
     return oidcMappingRepository
       .findById(command.id())
       .thenCompose(optionalMapping -> {
+        @Nullable
+        List<String> uris = Optional.ofNullable(command.redirectUris())
+          .map(it -> it.stream().filter(StringUtils::isNotEmpty).toList())
+          .orElse(null);
         boolean ownedByUser =
           optionalMapping.isPresent() &&
           optionalMapping.get().ownerId().equals(ownerId.get()) &&
@@ -83,7 +88,7 @@ public class ChangeOidcAppSettings extends BaseController {
               command.id(),
               command.name(),
               command.description(),
-              command.redirectUris()
+              uris
             )
             .thenApply(ignore -> HttpResponse.ok());
         } else {

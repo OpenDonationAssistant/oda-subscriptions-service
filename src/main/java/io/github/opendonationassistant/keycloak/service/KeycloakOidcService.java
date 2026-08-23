@@ -11,13 +11,16 @@ import io.github.opendonationassistant.keycloak.http.KeycloakAdminClient;
 import io.github.opendonationassistant.repository.OidcMapping;
 import io.github.opendonationassistant.repository.OidcMappingRepository;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.http.HttpResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.zalando.problem.ProblemBuilder;
 
@@ -311,6 +314,12 @@ public class KeycloakOidcService {
     String token,
     RegisterOidcClientCommand command
   ) {
+    @Nullable
+    List<String> uris = Optional.ofNullable(command.redirectUris())
+      .map(it ->
+        it.stream().filter(StringUtils::isNotEmpty).collect(Collectors.toList())
+      )
+      .orElse(null);
     var representation = new ClientRepresentation(
       command.clientId(),
       command.clientId(),
@@ -322,7 +331,7 @@ public class KeycloakOidcService {
       Boolean.TRUE.equals(command.implicitFlowEnabled()),
       Boolean.TRUE.equals(command.directAccessGrantsEnabled()),
       Boolean.TRUE.equals(command.serviceAccountsEnabled()),
-      List.copyOf(command.redirectUris()),
+      uris,
       null,
       null
     );
