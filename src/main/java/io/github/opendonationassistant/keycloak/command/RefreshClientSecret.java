@@ -76,23 +76,20 @@ public class RefreshClientSecret extends BaseController {
     // Verify that the OpenID Connect application is mapped to the authenticated
     // user before refreshing its secret.
     return oidcMappingRepository
-      .findById(command.id())
+      .findOwnedActive(command.id(), ownerId.get())
       .thenCompose(optionalMapping -> {
-        boolean ownedByUser =
-          optionalMapping.isPresent() &&
-          optionalMapping.get().ownerId().equals(ownerId.get()) &&
-          !optionalMapping.get().deregistered();
-        if (ownedByUser) {
-          return keycloakOidcService
-            .refreshClientSecret(command.id())
-            .thenApply(response ->
-              HttpResponse.ok(
-                new RefreshedClientSecret(command.id(), response.value())
-              )
-            );
-        } else {
-          return CompletableFuture.completedFuture(HttpResponse.unauthorized());
+        if (optionalMapping.isEmpty()) {
+          return CompletableFuture.completedFuture(
+            HttpResponse.unauthorized()
+          );
         }
+        return keycloakOidcService
+          .refreshClientSecret(command.id())
+          .thenApply(response ->
+            HttpResponse.ok(
+              new RefreshedClientSecret(command.id(), response.value())
+            )
+          );
       });
   }
 

@@ -30,6 +30,20 @@ public class OidcMappingRepository {
     );
   }
 
+  /**
+   * Finds a mapping only when it belongs to the given owner and has not been
+   * deregistered. Centralises the ownership rule shared by the command
+   * controllers so it cannot drift between endpoints.
+   */
+  public CompletableFuture<Optional<OidcMapping>> findOwnedActive(
+    String id,
+    String ownerId
+  ) {
+    return findById(id).thenApply(mapping ->
+      mapping.filter(it -> it.ownerId().equals(ownerId) && !it.deregistered())
+    );
+  }
+
   public CompletableFuture<Void> markDeregistered(String id) {
     return CompletableFuture.runAsync(() ->
       repository

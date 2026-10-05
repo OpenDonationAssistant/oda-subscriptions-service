@@ -1,4 +1,6 @@
 rabbitmq.host: ${RABBITMQ_HOST:`localhost`}
+keycloak:
+  url: ${KEYCLOAK_URL:`http://localhost:8080`}
 datasources:
   default:
     url: ${JDBC_URL:`jdbc:postgresql://localhost/postgres`}

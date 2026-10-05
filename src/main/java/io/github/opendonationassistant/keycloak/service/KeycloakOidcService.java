@@ -64,7 +64,9 @@ public class KeycloakOidcService {
   ) {
     return getAdminAccessToken()
       .thenCompose(token -> registerWithToken(token, command, ownerId))
-      .exceptionally(this::rethrow);
+      .exceptionally(error ->
+        fail(error, "register OpenID Connect application")
+      );
   }
 
   private CompletableFuture<OidcClientRegistrationResult> registerWithToken(
@@ -152,7 +154,9 @@ public class KeycloakOidcService {
         );
       })
       .thenCompose(ignored -> oidcMappings.markDeregistered(clientInternalId))
-      .exceptionally(this::rethrowVoid);
+      .exceptionally(error ->
+        fail(error, "deregister OpenID Connect application")
+      );
   }
 
   /**
@@ -174,7 +178,9 @@ public class KeycloakOidcService {
           clientInternalId
         );
       })
-      .exceptionally(this::rethrowVoid);
+      .exceptionally(error ->
+        fail(error, "refresh OpenID Connect client secret")
+      );
   }
 
   /**
@@ -204,7 +210,7 @@ public class KeycloakOidcService {
           )
       )
       .exceptionally(error ->
-        rethrow(error, "Failed to update OpenID Connect application settings")
+        fail(error, "update OpenID Connect application settings")
       );
   }
 
@@ -246,7 +252,7 @@ public class KeycloakOidcService {
           .thenCompose(mappings -> fetchApplications(token, mappings))
       )
       .exceptionally(error ->
-        rethrow(error, "Failed to list OpenID Connect applications")
+        fail(error, "list OpenID Connect applications")
       );
   }
 
@@ -254,15 +260,35 @@ public class KeycloakOidcService {
     String token,
     List<OidcMapping> mappings
   ) {
-    List<CompletableFuture<OidcApplication>> futures = mappings
+    // Each mapping is resolved independently: a single broken or deleted
+    // client must not fail the whole listing for the owner.
+    List<CompletableFuture<Optional<OidcApplication>>> futures = mappings
       .stream()
-      .map(mapping -> fetchApplication(token, mapping))
+      .map(mapping ->
+        fetchApplication(token, mapping)
+          .thenApply(Optional::of)
+          .exceptionally(error -> {
+            log.warn(
+              "Skipping unavailable OpenID Connect application",
+              Map.of(
+                "clientInternalId",
+                mapping.id(),
+                "error",
+                String.valueOf(error.getMessage())
+              )
+            );
+            return Optional.empty();
+          })
+      )
       .toList();
-    return CompletableFuture.allOf(
-      futures.toArray(CompletableFuture[]::new)
-    ).thenApply(ignored ->
-      futures.stream().map(CompletableFuture::join).toList()
-    );
+    return CompletableFuture
+      .allOf(futures.toArray(CompletableFuture[]::new))
+      .thenApply(ignored ->
+        futures.stream()
+          .map(CompletableFuture::join)
+          .flatMap(Optional::stream)
+          .toList()
+      );
   }
 
   private CompletableFuture<OidcApplication> fetchApplication(
@@ -271,42 +297,68 @@ public class KeycloakOidcService {
   ) {
     return keycloak
       .getClient("Bearer " + token, realm, mapping.id())
-      .thenApply(client ->
-        new OidcApplication(
-          requireNonNull(client.clientId(), "Keycloak returned no client id"),
-          requireNonNull(
-            client.id(),
-            "Keycloak returned no client internal id"
-          ),
-          client.name(),
-          client.description(),
-          secretSuffix(client.secret()),
-          client.redirectUris()
-        )
+      .thenCompose(client ->
+        fetchSecretSuffix(token, mapping.id())
+          .thenApply(secret ->
+            new OidcApplication(
+              requireNonNull(
+                client.clientId(),
+                "Keycloak returned no client id"
+              ),
+              requireNonNull(
+                client.id(),
+                "Keycloak returned no client internal id"
+              ),
+              client.name(),
+              client.description(),
+              secret.isPresent() ? secret.get() : null,
+              client.redirectUris()
+            )
+          )
       );
+  }
+
+  /**
+   * Reads the client secret from Keycloak's dedicated {@code client-secret}
+   * endpoint (the client representation no longer carries it) and reduces it
+   * to its suffix. Public clients, or clients the admin account may not read,
+   * simply yield {@code null}.
+   */
+  private CompletableFuture<Optional<String>> fetchSecretSuffix(
+    String token,
+    String clientInternalId
+  ) {
+    return keycloak
+      .getClientSecret("Bearer " + token, realm, clientInternalId)
+      .thenApply(response -> Optional.ofNullable(secretSuffix(response.value())))
+      .exceptionally(error -> {
+        log.debug(
+          "Client secret is not available",
+          Map.of("clientInternalId", clientInternalId)
+        );
+        return Optional.empty();
+      });
   }
 
   private static final int SECRET_SUFFIX_LENGTH = 6;
 
+  /**
+   * Keycloak returns this placeholder instead of the secret when the caller
+   * lacks the {@code manage-clients} permission. It must never be exposed as
+   * if it were a real secret suffix.
+   */
+  private static final String MASKED_SECRET = "**********";
+
   @Nullable
   private static String secretSuffix(@Nullable String secret) {
-    if (secret == null || secret.isBlank()) {
+    if (
+      secret == null || secret.isBlank() || MASKED_SECRET.equals(secret)
+    ) {
       return null;
     }
     return secret.substring(
       Math.max(0, secret.length() - SECRET_SUFFIX_LENGTH)
     );
-  }
-
-  private <T> T rethrowVoid(Throwable error) {
-    log.error(
-      "Failed to deregister OpenID Connect application",
-      errorToException(error)
-    );
-    if (error instanceof CompletionException completionError) {
-      throw completionError;
-    }
-    throw new CompletionException(error);
   }
 
   private CompletableFuture<String> getAdminAccessToken() {
@@ -363,7 +415,9 @@ public class KeycloakOidcService {
       )
       .orElse(null);
     var representation = new ClientRepresentation(
-      command.clientId(),
+      // The internal id is assigned by Keycloak and read back from the
+      // Location header, so the caller must not propose one.
+      null,
       command.clientId(),
       command.clientName(),
       command.description(),
@@ -389,12 +443,8 @@ public class KeycloakOidcService {
     return keycloak.createClient("Bearer " + token, realm, representation);
   }
 
-  private <T> T rethrow(Throwable error) {
-    return rethrow(error, "Failed to register OpenID Connect application");
-  }
-
-  private <T> T rethrow(Throwable error, String message) {
-    log.error(message, errorToException(error));
+  private <T> T fail(Throwable error, String operation) {
+    log.error("Failed to " + operation, errorToException(error));
     if (error instanceof CompletionException completionError) {
       throw completionError;
     }

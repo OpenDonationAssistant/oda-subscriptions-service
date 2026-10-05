@@ -72,28 +72,25 @@ public class ChangeOidcAppSettings extends BaseController {
     // Verify that the OpenID Connect application is mapped to the authenticated
     // user before changing its settings.
     return oidcMappingRepository
-      .findById(command.id())
+      .findOwnedActive(command.id(), ownerId.get())
       .thenCompose(optionalMapping -> {
+        if (optionalMapping.isEmpty()) {
+          return CompletableFuture.completedFuture(
+            HttpResponse.unauthorized()
+          );
+        }
         @Nullable
         List<String> uris = Optional.ofNullable(command.redirectUris())
           .map(it -> it.stream().filter(StringUtils::isNotEmpty).toList())
           .orElse(null);
-        boolean ownedByUser =
-          optionalMapping.isPresent() &&
-          optionalMapping.get().ownerId().equals(ownerId.get()) &&
-          !optionalMapping.get().deregistered();
-        if (ownedByUser) {
-          return keycloakOidcService
-            .changeSettings(
-              command.id(),
-              command.name(),
-              command.description(),
-              uris
-            )
-            .thenApply(ignore -> HttpResponse.ok());
-        } else {
-          return CompletableFuture.completedFuture(HttpResponse.unauthorized());
-        }
+        return keycloakOidcService
+          .changeSettings(
+            command.id(),
+            command.name(),
+            command.description(),
+            uris
+          )
+          .thenApply(ignore -> HttpResponse.ok());
       });
   }
 

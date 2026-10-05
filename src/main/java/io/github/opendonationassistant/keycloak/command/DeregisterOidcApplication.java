@@ -66,19 +66,16 @@ public class DeregisterOidcApplication extends BaseController {
       return CompletableFuture.completedFuture(HttpResponse.unauthorized());
     }
     return oidcMappingRepository
-      .findById(command.clientId())
+      .findOwnedActive(command.clientId(), ownerId.get())
       .thenCompose(optionalMapping -> {
-        boolean ownedByUser =
-          optionalMapping.isPresent() &&
-          optionalMapping.get().ownerId().equals(ownerId.get()) &&
-          !optionalMapping.get().deregistered();
-        if (ownedByUser) {
-          return keycloakOidcService
-            .deregister(command.clientId())
-            .thenApply(ignore -> HttpResponse.ok());
-        } else {
-          return CompletableFuture.completedFuture(HttpResponse.unauthorized());
+        if (optionalMapping.isEmpty()) {
+          return CompletableFuture.completedFuture(
+            HttpResponse.unauthorized()
+          );
         }
+        return keycloakOidcService
+          .deregister(command.clientId())
+          .thenApply(ignore -> HttpResponse.ok());
       });
   }
 

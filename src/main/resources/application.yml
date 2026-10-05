@@ -35,6 +35,10 @@ flyway:
       schemas: 'subscriptions'
       default-schema: 'subscriptions'
 keycloak:
+  # Base URL of the Keycloak server used by the @Client("keycloak") admin client.
+  # Must be provided at runtime (KEYCLOAK_URL env var); the standalone profile
+  # supplies a localhost default for local development.
+  url: ${KEYCLOAK_URL}
   realm: ${KEYCLOAK_REALM:`ODA`}
   admin:
     realm: ${KEYCLOAK_ADMIN_REALM:`master`}
@@ -43,14 +47,15 @@ keycloak:
 endpoints:
   all:
     enabled: true
-    sensitive: false
-  caches:
+    sensitive: true
+  health:
     enabled: true
-  loggers:
-    write-sensitive: false
+    sensitive: false
   prometheus:
+    enabled: true
     sensitive: false
   metrics:
+    enabled: true
     sensitive: false
 datasources:
   default:
