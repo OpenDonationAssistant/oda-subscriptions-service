@@ -64,8 +64,7 @@ public class KeycloakOidcService {
   ) {
     return getAdminAccessToken()
       .thenCompose(token -> registerWithToken(token, command, ownerId))
-      .exceptionally(error ->
-        fail(error, "register OpenID Connect application")
+      .exceptionally(error -> fail(error, "register OpenID Connect application")
       );
   }
 
@@ -90,8 +89,7 @@ public class KeycloakOidcService {
       );
       return addStompDefaultScope(token, clientInternalId)
         .thenCompose(_ ->
-          oidcMappings
-            .create(new OidcMapping(clientInternalId, ownerId, false))
+          oidcMappings.create(new OidcMapping(clientInternalId, ownerId, false))
         )
         .thenApply(_ -> new OidcClientRegistrationResult(clientInternalId));
     });
@@ -251,9 +249,7 @@ public class KeycloakOidcService {
           .findByOwnerId(ownerId)
           .thenCompose(mappings -> fetchApplications(token, mappings))
       )
-      .exceptionally(error ->
-        fail(error, "list OpenID Connect applications")
-      );
+      .exceptionally(error -> fail(error, "list OpenID Connect applications"));
   }
 
   private CompletableFuture<List<OidcApplication>> fetchApplications(
@@ -281,14 +277,15 @@ public class KeycloakOidcService {
           })
       )
       .toList();
-    return CompletableFuture
-      .allOf(futures.toArray(CompletableFuture[]::new))
-      .thenApply(ignored ->
-        futures.stream()
-          .map(CompletableFuture::join)
-          .flatMap(Optional::stream)
-          .toList()
-      );
+    return CompletableFuture.allOf(
+      futures.toArray(CompletableFuture[]::new)
+    ).thenApply(ignored ->
+      futures
+        .stream()
+        .map(CompletableFuture::join)
+        .flatMap(Optional::stream)
+        .toList()
+    );
   }
 
   private CompletableFuture<OidcApplication> fetchApplication(
@@ -298,23 +295,19 @@ public class KeycloakOidcService {
     return keycloak
       .getClient("Bearer " + token, realm, mapping.id())
       .thenCompose(client ->
-        fetchSecretSuffix(token, mapping.id())
-          .thenApply(secret ->
-            new OidcApplication(
-              requireNonNull(
-                client.clientId(),
-                "Keycloak returned no client id"
-              ),
-              requireNonNull(
-                client.id(),
-                "Keycloak returned no client internal id"
-              ),
-              client.name(),
-              client.description(),
-              secret.isPresent() ? secret.get() : null,
-              client.redirectUris()
-            )
+        fetchSecretSuffix(token, mapping.id()).thenApply(secret ->
+          new OidcApplication(
+            requireNonNull(client.clientId(), "Keycloak returned no client id"),
+            requireNonNull(
+              client.id(),
+              "Keycloak returned no client internal id"
+            ),
+            client.name(),
+            client.description(),
+            secret.isPresent() ? secret.get() : null,
+            client.redirectUris()
           )
+        )
       );
   }
 
@@ -330,7 +323,8 @@ public class KeycloakOidcService {
   ) {
     return keycloak
       .getClientSecret("Bearer " + token, realm, clientInternalId)
-      .thenApply(response -> Optional.ofNullable(secretSuffix(response.value())))
+      .thenApply(response -> Optional.ofNullable(secretSuffix(response.value()))
+      )
       .exceptionally(error -> {
         log.debug(
           "Client secret is not available",
@@ -351,9 +345,7 @@ public class KeycloakOidcService {
 
   @Nullable
   private static String secretSuffix(@Nullable String secret) {
-    if (
-      secret == null || secret.isBlank() || MASKED_SECRET.equals(secret)
-    ) {
+    if (secret == null || secret.isBlank() || MASKED_SECRET.equals(secret)) {
       return null;
     }
     return secret.substring(
@@ -415,9 +407,7 @@ public class KeycloakOidcService {
       )
       .orElse(null);
     var representation = new ClientRepresentation(
-      // The internal id is assigned by Keycloak and read back from the
-      // Location header, so the caller must not propose one.
-      null,
+      command.clientId(),
       command.clientId(),
       command.clientName(),
       command.description(),
