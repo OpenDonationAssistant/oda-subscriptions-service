@@ -30,6 +30,7 @@ public class EventsListener {
   public void receive(
     byte[] data,
     @MessageHeader("type") String type,
+    @MessageHeader("recipientId") String recipientId,
     RabbitAcknowledgement acknowledgement
   ) {
     repository
@@ -38,6 +39,9 @@ public class EventsListener {
         subscriptions
           .stream()
           .filter(subscription -> subscription.data().events().contains(type))
+          .filter(subscription ->
+            subscription.data().recipientId().equals(recipientId)
+          )
           .forEach(subscription -> {
             eventPublisher.publish(
               subscription.data().subscriberId(),
