@@ -20,7 +20,7 @@ PostgreSQL (Flyway) holds state. 23 Java files, ~1,690 LOC.
 │   └── subscription/commands/    # subscription query/command controllers
 ├── src/main/resources/           # application*.yml + db/migration (Flyway)
 ├── src/test/java/.../repository/ # EMPTY (no tests exist)
-├── pom.xml                       # parent io.micronaut.platform:micronaut-parent:5.1.0
+├── pom.xml                       # parent io.micronaut.platform:micronaut-parent:5.2.5
 └── .github/workflows/maven.yml   # delegates to oda-libraries reusable release workflow
 ```
 
